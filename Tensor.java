@@ -179,7 +179,7 @@ public class Tensor {
                 // 事实上，如果是原先的值，调用的顺序和原来是一样的
 
                 this.set(oldData[count], temp);
-                System.out.println("在范围内：" + get(temp));
+                // System.out.println("在范围内：" + get(temp));
                 count++;
                 // temp[dimensions - 2] -= padding;
                 // temp[dimensions - 1] -= padding;
@@ -213,7 +213,7 @@ public class Tensor {
         int times = data.length / (shape[shape.length - 1] * shape[shape.length - 2]);
         int everySize = shape[shape.length - 1] * shape[shape.length - 2];
         int[] average = new int[times];
-        System.out.println("average.length" + average.length);
+        // System.out.println("average.length" + average.length);
         Object[] oldData = new Object[data.length];
         for (int i = 0; i < times; i++) {
             int sum = 0;
@@ -258,7 +258,7 @@ public class Tensor {
                 // 事实上，如果是原先的值，调用的顺序和原来是一样的
 
                 this.set(oldData[count], temp);
-                System.out.println("在范围内：" + get(temp));
+                // System.out.println("在范围内：" + get(temp));
                 count++;
                 // temp[dimensions - 2] -= padding;
                 // temp[dimensions - 1] -= padding;
@@ -287,36 +287,49 @@ public class Tensor {
 
     public static void main(String[] args) {
 
-        Tensor tensor = new Tensor(2, 3);
-        tensor.set(0, 0, 0);
-        tensor.set(2, 0, 1);
-        tensor.set(3, 0, 2);
-        tensor.set(4, 1, 0);
-        tensor.set(5, 1, 1);
-        tensor.set(6, 1, 2);
-        Tensor other = new Tensor(2, 3);
-        other.set(1, 0, 0);
-        other.set(2, 0, 1);
-        other.set(3, 0, 2);
-        other.set(4, 1, 0);
-        other.set(5, 1, 1);
-        other.set(6, 1, 2);
+        Tensor tensor = new Tensor(2, 3, 2);
+        tensor.set(10, 0, 0, 0);
+        tensor.set(20, 0, 0, 1);
+        tensor.set(30, 0, 1, 0);
+        tensor.set(40, 0, 1, 1);
+        tensor.set(50, 0, 2, 0);
+        tensor.set(60, 0, 2, 1);
+        tensor.set(70, 1, 0, 0);
+        tensor.set(80, 1, 0, 1);
+        tensor.set(90, 1, 1, 0);
+        tensor.set(100, 1, 1, 1);
+        tensor.set(110, 1, 2, 0);
+        tensor.set(120, 1, 2, 1);
+        Tensor other = new Tensor(2, 3, 2);
+        other.set(1, 0, 0, 0);
+        other.set(2, 0, 0, 1);
+        other.set(3, 0, 1, 0);
+        other.set(4, 0, 1, 1);
+        other.set(5, 0, 2, 0);
+        other.set(6, 0, 2, 1);
+        other.set(7, 1, 0, 0);
+        other.set(8, 1, 0, 1);
+        other.set(9, 1, 1, 0);
+        other.set(10, 1, 1, 1);
+        other.set(11, 1, 2, 0);
+        other.set(12, 1, 2, 1);
         Tensor result = tensor.add(other);
 
-        System.out.println(result.get(0, 0)); // Output: 1
-        System.out.println(result.get(1, 2)); // Output: 6
+        System.out.println(result.get(0, 0, 0)); // Output: 11
+        System.out.println(result.get(1, 2, 0)); // Output: 121
 
         Tensor result2 = tensor.sub(other);
-        System.out.println(result2.get(0, 0)); // Output: 1
-        System.out.println(result2.get(1, 2)); // Output: 6
+        System.out.println(result2.get(0, 0, 0)); // Output: 9
+        System.out.println(result2.get(1, 2, 0)); // Output: 99
 
-        tensor.pad(2);
-        System.out.println(tensor.get(0, 0));
-        System.out.println(tensor.get(2, 2));
+        tensor.pad(1);
+        System.out.println(tensor.get(0, 0, 0));// Output: 0
+        System.out.println(tensor.get(0, 1, 1));// Output: 10
+        System.out.println(tensor.get(1, 2, 0));// Output: 0
 
         tensor.stretch(10, 10);
-        System.out.println(tensor.get(0, 0));
-        System.out.println(tensor.get(3, 3));
+        System.out.println(tensor.get(0, 0, 0));// Output: 35
+        System.out.println(tensor.get(1, 9, 9));// Output: 95
 
         /*
          * Tensor2 result3 = tensor.pad(2);
