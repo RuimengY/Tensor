@@ -4,6 +4,7 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
@@ -15,7 +16,7 @@ public class Batch_test {
     public void getKernelFromFile() {
 
         try {
-            BufferedReader reader = new BufferedReader(new FileReader("sample_conv_kernel.txt"));
+            BufferedReader reader = new BufferedReader(new FileReader("./conv_kernel.txt"));
             String line = reader.readLine();
             String[] numbers = line.split(" ");
             int num1 = Integer.parseInt(numbers[0]);
@@ -40,13 +41,12 @@ public class Batch_test {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println(kernel.get(0, 1, 1, 1));
     }
 
     public void readImages() {
         try {
             // Iterate over the subdirectories in the ./figs/ directory
-            File figsDir = new File("sample");
+            File figsDir = new File("./figs/");
             File[] subdirectories = figsDir.listFiles(File::isDirectory);
             for (File subdirectory : subdirectories) {
                 // Get the images in the subdirectory
@@ -76,10 +76,6 @@ public class Batch_test {
                         }
                     }
                 }
-                System.out.println(photoes.get(0, 0, 0, 0));
-                System.out.println(photoes.get(0, 1, 0, 0));
-                System.out.println(photoes.get(0, 2, 0, 0));
-                // Process the imagesTensor as needed
 
             }
         } catch (IOException e) {
@@ -124,13 +120,41 @@ public class Batch_test {
         return result;
     }
 
+    // 将result存储在.txt文件中
+    public void saveResult(Tensor result) {
+        // Output result to result.txt
+        try {
+            File resultsDir = new File("./results");
+            if (!resultsDir.exists()) {
+                resultsDir.mkdir();
+            }
+            for (int i = 0; i < result.getShape(0); i++) {
+                String fileName = String.format("./results/%03d_result.txt", i + 1);
+                FileWriter writer = new FileWriter(fileName);
+                // 在第一行写入num，channel，Hout，Wout
+                writer.write(result.getShape(0) + " " + result.getShape(1) + " " + result.getShape(2) + " "
+                        + result.getShape(3) + "\n");
+                for (int j = 0; j < result.getShape(1); j++) {
+                    for (int k = 0; k < result.getShape(2); k++) {
+                        for (int l = 0; l < result.getShape(3); l++) {
+                            writer.write(result.get(i, j, k, l) + " ");
+                        }
+                        writer.write("\n");
+                    }
+                }
+                writer.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) {
         Batch_test test = new Batch_test();
         test.getKernelFromFile();
         test.readImages();
         Tensor result = test.conv(2, 1);
-        System.out.println(result.getShape(2));
-        System.out.println(result.get(0, 0, 0, 0));
-    }
+        test.saveResult(result);
 
+    }
 }
