@@ -1,5 +1,3 @@
-package Lab6;
-
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -11,7 +9,8 @@ import javax.imageio.ImageIO;
 
 public class Batch_test {
     private Tensor kernel = new Tensor();
-    private Tensor photoes = new Tensor();
+    // private Tensor photoes = new Tensor();
+    private Tensor[] AllPhotoes;
 
     public void getKernelFromFile() {
 
@@ -48,7 +47,11 @@ public class Batch_test {
             // Iterate over the subdirectories in the ./figs/ directory
             File figsDir = new File("./figs/");
             File[] subdirectories = figsDir.listFiles(File::isDirectory);
-            for (File subdirectory : subdirectories) {
+            int total = subdirectories.length;
+            AllPhotoes = new Tensor[total];// AllPhotoes存储了每个文件夹中的图片
+            int num = 0;// 记录文件夹的个数
+            for (File subdirectory : subdirectories) {// 遍历一个文件夹
+                Tensor photoes = new Tensor();// 存储每个文件夹中的图片
                 // Get the images in the subdirectory
                 File[] images = subdirectory.listFiles();
                 // 确定图片的高度和宽度
@@ -76,7 +79,8 @@ public class Batch_test {
                         }
                     }
                 }
-
+                AllPhotoes[num] = photoes;// 将每个文件夹中的图片存储在AllPhotoes中
+                num++;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -84,62 +88,76 @@ public class Batch_test {
     }
 
     // 实现kernel和photoes的卷积运算
-    public Tensor conv(int padding, int stride) {
-        // 将kernel进行padding处理
-        photoes.pad(padding);
-        // 计算卷积后的result的各个维数的大小
-        int Hout = (photoes.getShape(2) - kernel.getShape(2)) / stride + 1;
-        int Wout = (photoes.getShape(3) - kernel.getShape(3)) / stride + 1;
-        int num = photoes.getShape(0);
-        int channel = kernel.getShape(0);
-        Tensor result = new Tensor(num, channel, Hout, Wout);
-        for (int i = 0; i < num; i++) { // 遍历每张图片
-            for (int j = 0; j < channel; j++) { // 遍历每个输出通道
-                for (int m = 0; m < Hout; m++) {
-                    for (int n = 0; n < Wout; n++) {
-                        int sum = 0;
-                        for (int k = 0; k < 3; k++) { // 遍历每个输入通道(反正要红绿蓝三种颜色都加起来)
-                            // 将二维数组中的每个点都算出来
-                            for (int p = 0; p < kernel.getShape(2); p++) { // 遍历kernel的高
-                                for (int q = 0; q < kernel.getShape(3); q++) { // 遍历kernel的宽
-                                    int imgRow = m * stride + p;// 此时在photoes中的行数
-                                    int imgCol = n * stride + q;// 此时在photoes中的列数
-                                    if (imgRow < photoes.getShape(2) && imgCol < photoes.getShape(3)) {
-                                        // 由于此时已经确定了是四维数组，循环方便
-                                        sum += (int) photoes.get(i, k, imgRow, imgCol) * (int) kernel.get(j, k, p, q);
+    public Tensor[] conv(int padding, int stride) {
+        Tensor[] Allresult = new Tensor[AllPhotoes.length];
+        for (int x = 0; x < AllPhotoes.length; x++) {
+            Tensor photoes = AllPhotoes[x];
+            // 将kernel进行padding处理
+            photoes.pad(padding);
+            // 计算卷积后的result的各个维数的大小
+            int Hout = (photoes.getShape(2) - kernel.getShape(2)) / stride + 1;
+            int Wout = (photoes.getShape(3) - kernel.getShape(3)) / stride + 1;
+            int num = photoes.getShape(0);
+            int channel = kernel.getShape(0);
+            Tensor result = new Tensor(num, channel, Hout, Wout);
+            for (int i = 0; i < num; i++) { // 遍历每张图片
+                for (int j = 0; j < channel; j++) { // 遍历每个输出通道
+                    for (int m = 0; m < Hout; m++) {
+                        for (int n = 0; n < Wout; n++) {
+                            int sum = 0;
+                            for (int k = 0; k < 3; k++) { // 遍历每个输入通道(反正要红绿蓝三种颜色都加起来)
+                                // 将二维数组中的每个点都算出来
+                                for (int p = 0; p < kernel.getShape(2); p++) { // 遍历kernel的高
+                                    for (int q = 0; q < kernel.getShape(3); q++) { // 遍历kernel的宽
+                                        int imgRow = m * stride + p;// 此时在photoes中的行数
+                                        int imgCol = n * stride + q;// 此时在photoes中的列数
+                                        if (imgRow < photoes.getShape(2) && imgCol < photoes.getShape(3)) {
+                                            // 由于此时已经确定了是四维数组，循环方便
+                                            sum += (int) photoes.get(i, k, imgRow, imgCol)
+                                                    * (int) kernel.get(j, k, p, q);
+                                        }
                                     }
                                 }
                             }
+                            // 将三种颜色在该点的和作为result该点的值
+                            result.set(sum, i, j, m, n);
                         }
-                        // 将三种颜色在该点的和作为result该点的值
-                        result.set(sum, i, j, m, n);
                     }
                 }
             }
+            // return result;
+            Allresult[x] = result;
         }
-        return result;
+        //System.out.println(Allresult[3].getShape(0));
+        return Allresult;
     }
 
     // 将result存储在.txt文件中
-    public void saveResult(Tensor result) {
+    public void saveResult(Tensor[] Allresult) {
         // Output result to result.txt
         try {
             File resultsDir = new File("./results");
             if (!resultsDir.exists()) {
                 resultsDir.mkdir();
             }
-            for (int i = 0; i < result.getShape(0); i++) {
-                String fileName = String.format("./results/%03d_result.txt", i + 1);
+            for (int x = 0; x < Allresult.length; x++) {
+                String fileName = String.format("./results/%03d_result.txt", x + 1);
                 FileWriter writer = new FileWriter(fileName);
+                Tensor result = Allresult[x];
+                /*writer.write(
+                        Allresult[2].getShape(0) + " " + Allresult[3].getShape(0) + " " + Allresult[4].getShape(0) + " "
+                                + Allresult[5].getShape(0) + "\n");// 测试到底哪里出了问题，应该是5 */
                 // 在第一行写入num，channel，Hout，Wout
                 writer.write(result.getShape(0) + " " + result.getShape(1) + " " + result.getShape(2) + " "
                         + result.getShape(3) + "\n");
-                for (int j = 0; j < result.getShape(1); j++) {
-                    for (int k = 0; k < result.getShape(2); k++) {
-                        for (int l = 0; l < result.getShape(3); l++) {
-                            writer.write(result.get(i, j, k, l) + " ");
+                for(int i = 0; i <result.getShape(0);i++) {
+                    for (int j = 0; j < result.getShape(1); j++) {
+                        for (int k = 0; k < result.getShape(2); k++) {
+                            for (int l = 0; l < result.getShape(3); l++) {
+                                writer.write(result.get(i, j, k, l) + " ");
+                            }
+                            writer.write("\n");
                         }
-                        writer.write("\n");
                     }
                 }
                 writer.close();
@@ -153,7 +171,7 @@ public class Batch_test {
         Batch_test test = new Batch_test();
         test.getKernelFromFile();
         test.readImages();
-        Tensor result = test.conv(2, 1);
+        Tensor[] result = test.conv(2, 1);
         test.saveResult(result);
 
     }
